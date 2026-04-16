@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>鑑界有據、界址留影</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-body: #0f1117;
+  --bg-card: #1a1d27;
+  --bg-card-alt: #222632;
+  --bg-input: #2a2e3c;
+  --bg-hover: #2f3445;
+  --border-color: #3a3f50;
+  --border-light: #4a5068;
+  --text-primary: #e8eaf0;
+  --text-secondary: #9da3b4;
+  --text-muted: #6b7280;
+  --accent: #e24b4a;
+  --accent-glow: rgba(226, 75, 74, 0.3);
+  --accent-blue: #4a8fe2;
+  --accent-blue-glow: rgba(74, 143, 226, 0.25);
+  --accent-green: #34d399;
+  --accent-green-glow: rgba(52, 211, 153, 0.2);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.25);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.35);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.5);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --font: 'Noto Sans TC', system-ui, -apple-system, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; }
+body {
+  font-family: var(--font);
+  background: var(--bg-body);
+  color: var(--text-primary);
+  min-height: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px 16px 40px;
+}
+
+/* ── 標頭 ── */
+.header {
+  text-align: center;
+  padding: 28px 0 20px;
+}
+.header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  background: linear-gradient(135deg, #e24b4a, #f09c4a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.header p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+}
+
+/* ── 步驟卡片 ── */
+.step-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-sm);
+}
+.step-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+/* ── 輸入框 ── */
+input[type="text"] {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  font-size: 15px;
+  font-family: var(--font);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+input[type="text"]:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px var(--accent-blue-glow);
+}
+input[type="text"]::placeholder {
+  color: var(--text-muted);
+}
+.format-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: var(--bg-card-alt);
+  border-radius: 6px;
+  border-left: 3px solid var(--accent);
+}
+.format-hint span {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ── 相片滑軌區域 ── */
+.slider-container {
+  position: relative;
+}
+.slider-track {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-sm);
+  scrollbar-width: none;
+}
+.slider-track::-webkit-scrollbar { display: none; }
+
+.slider-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(26, 29, 39, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  transition: background 0.2s, transform 0.2s;
+  box-shadow: var(--shadow-md);
+}
+.slider-arrow:hover {
+  background: rgba(42, 46, 60, 0.95);
+}
+.slider-arrow:active {
+  transform: translateY(-50%) scale(0.92);
+}
+.slider-arrow.left { left: 8px; }
+.slider-arrow.right { right: 8px; }
+
+/* ── 照片卡片 ── */
+.photo-card {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-card-alt);
+}
+.photo-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+}
+.num-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+.photo-fname {
+  font-size: 12px;
+  color: var(--text-secondary);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.canvas-wrap {
+  cursor: crosshair;
+  position: relative;
+}
+.canvas-wrap canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.stamp-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 6px 0;
+  background: var(--bg-card);
+}
+.btn-row {
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-color);
+}
+.btn-xs {
+  flex: 1;
+  height: 32px;
+  font-size: 12px;
+  font-family: var(--font);
+  font-weight: 500;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-xs:hover { background: var(--bg-hover); }
+.btn-xs:active { transform: scale(0.97); }
+.btn-xs.danger { color: var(--accent); border-color: rgba(226,75,74,0.3); }
+.btn-xs.danger:hover { background: rgba(226,75,74,0.1); }
+
+.empty-card {
+  flex: 0 0 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 0;
+  color: var(--text-muted);
+  font-size: 14px;
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.page-indicator {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  min-height: 16px;
+}
+
+/* ── 新增照片按鈕 ── */
+.add-photo-btn {
+  width: 100%;
+  height: 48px;
+  margin-top: 12px;
+  border: 1.5px dashed var(--border-light);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-family: var(--font);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+.add-photo-btn:hover {
+  background: var(--bg-card-alt);
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}
+
+/* ── 懸浮修改編號彈窗 ── */
+.float-modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+.float-modal-overlay.open {
+  display: flex;
+}
+.float-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 24px;
+  width: 320px;
+  max-width: 90vw;
+  box-shadow: var(--shadow-lg);
+  animation: modalIn 0.25s ease-out;
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.9) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.float-modal h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.float-modal .modal-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+.float-modal input[type="number"] {
+  width: 100%;
+  height: 52px;
+  padding: 0 16px;
+  font-size: 26px;
+  font-weight: 600;
+  font-family: var(--font);
+  text-align: center;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.float-modal input[type="number"]:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px var(--accent-blue-glow);
+}
+.modal-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+.modal-row button {
+  flex: 1;
+  height: 42px;
+  font-size: 14px;
+  font-family: var(--font);
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.modal-row button:hover { background: var(--bg-hover); }
+.modal-row button.confirm {
+  background: var(--accent-blue);
+  color: #fff;
+  border-color: transparent;
+}
+.modal-row button.confirm:hover { opacity: 0.88; }
+
+/* ── 主按鈕 ── */
+.btn-main {
+  width: 100%;
+  height: 48px;
+  font-size: 15px;
+  font-family: var(--font);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  transition: background 0.2s, opacity 0.2s, transform 0.1s;
+}
+.btn-main:active { transform: scale(0.98); }
+.btn-main.primary {
+  background: linear-gradient(135deg, var(--accent), #c73a39);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+.btn-main.primary:hover { opacity: 0.9; }
+.btn-main:disabled { opacity: 0.35; cursor: not-allowed; }
+.share-row { display: flex; gap: 10px; }
+.share-row .btn-main { margin-bottom: 0; }
+.share-row .btn-main:first-child {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+.share-row .btn-main:last-child {
+  background: linear-gradient(135deg, #06c755, #04a847);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 16px rgba(6, 199, 85, 0.25);
+}
+.status-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-top: 10px;
+  min-height: 18px;
+}
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(26, 29, 39, 0.95);
+  backdrop-filter: blur(12px);
+  color: #fff;
+  font-size: 13px;
+  padding: 12px 22px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  opacity: 0;
+  transition: opacity 0.25s;
+  pointer-events: none;
+  z-index: 200;
+  white-space: nowrap;
+  box-shadow: var(--shadow-md);
+}
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <h1>【鑑界有據、界址留影】</h1>
+    <p>點擊相片標記界標編號，完成後打包並傳送</p>
+  </div>
+
+  <!-- 步驟 1 -->
+  <div class="step-card">
+    <div class="step-label">步驟 1 — 案件名稱</div>
+    <input type="text" id="caseName" placeholder="輸入案件名稱" oninput="onCaseChange()"/>
+    <div class="format-hint">格式範例：<span>1150415力行段438,439地號</span></div>
+  </div>
+
+  <!-- 步驟 2 -->
+  <div class="step-card">
+    <div class="step-label">步驟 2 — 載入相片與標記</div>
+    <div class="slider-container" id="sliderContainer">
+      <div class="slider-track" id="sliderTrack">
+        <div class="empty-card">尚未載入相片</div>
+      </div>
+      <button class="slider-arrow left" id="arrowLeft" onclick="slideLeft()" style="display:none">‹</button>
+      <button class="slider-arrow right" id="arrowRight" onclick="slideRight()" style="display:none">›</button>
+    </div>
+    <div class="page-indicator" id="pageIndicator"></div>
+
+    <button class="add-photo-btn" onclick="document.getElementById('fileInput').click()">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      新增相片
+    </button>
+    <input type="file" id="fileInput" accept="image/*" multiple style="display:none" onchange="addPhotos(this.files)">
+  </div>
+
+  <!-- 步驟 3 -->
+  <div class="step-card">
+    <div class="step-label">步驟 3 — 打包與傳送</div>
+    <button class="btn-main primary" id="packBtn" onclick="packPhotos()" disabled>打包 ZIP</button>
+    <div class="share-row" id="shareRow" style="display:none">
+      <button class="btn-main" onclick="doDownload()">📥 下載到手機</button>
+      <button class="btn-main" onclick="doShare()">💬 LINE 分享</button>
+    </div>
+    <p class="status-hint" id="statusHint">請先填入案件名稱並載入相片</p>
+  </div>
+</div>
+
+<!-- 懸浮修改編號彈窗 -->
+<div class="float-modal-overlay" id="modalOverlay" onclick="onOverlayClick(event)">
+  <div class="float-modal">
+    <h3>修改界標編號</h3>
+    <p class="modal-desc" id="modalDesc"></p>
+    <input type="number" id="modalInput" min="1"/>
+    <div class="modal-row">
+      <button onclick="closeModal()">取消</button>
+      <button class="confirm" onclick="confirmModal()">確認</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+const photos = [];
+let zipBlob = null;
+let modalTargetId = null;
+let photoIdCounter = 0;
+
+/* ── Toast 提示 ── */
+function showToast(msg, dur){
+  dur = dur || 2500;
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+/* ── 編號邏輯 ── */
+function getMaxNum(){
+  return photos.length === 0 ? 0 : Math.max(...photos.map(p => p.num));
+}
+
+/* ── 載入照片 ── */
+function addPhotos(files){
+  Array.from(files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const id = ++photoIdCounter;
+        const num = getMaxNum() + 1;
+        photos.push({ id, file, img, num, stamp: null });
+        renderSlider();
+        updateButtons();
+        zipBlob = null;
+        setTimeout(() => {
+          const track = document.getElementById('sliderTrack');
+          const cards = track.querySelectorAll('.photo-card');
+          if(cards.length){
+            cards[cards.length-1].scrollIntoView({ behavior:'smooth', block:'nearest', inline:'start' });
+          }
+          updateIndicator();
+        }, 100);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  document.getElementById('fileInput').value = '';
+}
+
+/* ── 渲染滑軌 ── */
+function renderSlider(){
+  const track = document.getElementById('sliderTrack');
+  track.innerHTML = '';
+  if(photos.length === 0){
+    track.innerHTML = '<div class="empty-card">尚未載入相片</div>';
+    updateIndicator();
+    updateArrows();
+    return;
+  }
+  photos.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'photo-card';
+    card.id = 'card-' + p.id;
+    card.innerHTML =
+      '<div class="photo-header">' +
+        '<div class="num-badge" id="badge-' + p.id + '">' + p.num + '</div>' +
+        '<span class="photo-fname">' + p.file.name + '</span>' +
+      '</div>' +
+      '<div class="canvas-wrap" id="cwrap-' + p.id + '"></div>' +
+      '<div class="stamp-hint" id="hint-' + p.id + '">' + (p.stamp ? '已標記 — 點【清除編號】重新標記' : '👆 點擊相片標記界標位置') + '</div>' +
+      '<div class="btn-row">' +
+        '<button class="btn-xs" onclick="openModal(' + p.id + ')">✏️ 修改編號</button>' +
+        '<button class="btn-xs danger" onclick="clearStamp(' + p.id + ')">🗑️ 清除編號</button>' +
+        '<button class="btn-xs danger" onclick="removePhoto(' + p.id + ')">❌ 移除照片</button>' +
+      '</div>';
+    track.appendChild(card);
+    const cwrap = card.querySelector('.canvas-wrap');
+    const canvas = document.createElement('canvas');
+    canvas.width = p.img.naturalWidth;
+    canvas.height = p.img.naturalHeight;
+    drawPhoto(canvas, p);
+    cwrap.appendChild(canvas);
+    canvas.addEventListener('click', e => onCanvasClick(e, canvas, p));
+  });
+  updateIndicator();
+  updateArrows();
+  track.addEventListener('scroll', () => { updateIndicator(); updateArrows(); }, { passive: true });
+}
+
+/* ── 頁碼指示 ── */
+function updateIndicator(){
+  const track = document.getElementById('sliderTrack');
+  const ind = document.getElementById('pageIndicator');
+  if(photos.length === 0){ ind.textContent = ''; return; }
+  const idx = Math.round(track.scrollLeft / track.offsetWidth);
+  ind.textContent = (idx + 1) + ' / ' + photos.length;
+}
+
+/* ── 左右箭頭 ── */
+function updateArrows(){
+  const left = document.getElementById('arrowLeft');
+  const right = document.getElementById('arrowRight');
+  if(photos.length <= 1){
+    left.style.display = 'none';
+    right.style.display = 'none';
+    return;
+  }
+  left.style.display = 'flex';
+  right.style.display = 'flex';
+}
+function slideLeft(){
+  const track = document.getElementById('sliderTrack');
+  track.scrollBy({ left: -track.offsetWidth, behavior: 'smooth' });
+}
+function slideRight(){
+  const track = document.getElementById('sliderTrack');
+  track.scrollBy({ left: track.offsetWidth, behavior: 'smooth' });
+}
+
+/* ── Canvas 繪製 ── */
+function drawPhoto(canvas, p){
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(p.img, 0, 0);
+  if(p.stamp){
+    const s = p.stamp;
+    const r = Math.max(22, canvas.width * 0.045);
+    const fs = Math.max(15, canvas.width * 0.032);
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(226,75,74,0.9)';
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = Math.max(2, canvas.width * 0.004);
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold ' + fs + 'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(p.num, s.x, s.y);
+  }
+}
+
+/* ── 點擊標記 ── */
+function onCanvasClick(e, canvas, p){
+  if(p.stamp){ showToast('每張相片只能蓋一個編號，請先點【清除編號】再重新標記'); return; }
+  const rect = canvas.getBoundingClientRect();
+  p.stamp = {
+    x: (e.clientX - rect.left) * (canvas.width / rect.width),
+    y: (e.clientY - rect.top) * (canvas.height / rect.height)
+  };
+  drawPhoto(canvas, p);
+  const hint = document.getElementById('hint-' + p.id);
+  if(hint) hint.textContent = '已標記 — 點【清除編號】重新標記';
+  zipBlob = null;
+}
+
+/* ── 清除編號 ── */
+function clearStamp(id){
+  const p = photos.find(x => x.id === id);
+  if(!p) return;
+  p.stamp = null;
+  const canvas = document.querySelector('#cwrap-' + id + ' canvas');
+  if(canvas) drawPhoto(canvas, p);
+  const hint = document.getElementById('hint-' + id);
+  if(hint) hint.textContent = '👆 點擊相片標記界標位置';
+  zipBlob = null;
+  showToast('已清除編號標記');
+}
+
+/* ── 移除照片 ── */
+function removePhoto(id){
+  const i = photos.findIndex(x => x.id === id);
+  if(i !== -1) photos.splice(i, 1);
+  closeModal();
+  renderSlider();
+  updateButtons();
+  zipBlob = null;
+}
+
+/* ── 懸浮修改編號彈窗 ── */
+function openModal(id){
+  const p = photos.find(x => x.id === id);
+  if(!p) return;
+  modalTargetId = id;
+  document.getElementById('modalDesc').textContent = '相片：' + p.file.name;
+  document.getElementById('modalInput').value = p.num;
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('modalInput').focus(), 150);
+}
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('open');
+  modalTargetId = null;
+}
+function onOverlayClick(e){
+  if(e.target === document.getElementById('modalOverlay')) closeModal();
+}
+function confirmModal(){
+  const val = parseInt(document.getElementById('modalInput').value);
+  if(!val || val < 1){ showToast('請輸入有效編號'); return; }
+  const p = photos.find(x => x.id === modalTargetId);
+  if(!p) return;
+  p.num = val;
+  const canvas = document.querySelector('#cwrap-' + p.id + ' canvas');
+  if(canvas) drawPhoto(canvas, p);
+  const badge = document.getElementById('badge-' + p.id);
+  if(badge) badge.textContent = val;
+  const hint = document.getElementById('hint-' + p.id);
+  if(hint && p.stamp) hint.textContent = '已標記 — 點【清除編號】重新標記';
+  closeModal();
+  showToast('編號已更新為 ' + val);
+  zipBlob = null;
+}
+
+/* ── 狀態控制 ── */
+function onCaseChange(){ updateButtons(); zipBlob = null; }
+function updateButtons(){
+  const hasName = document.getElementById('caseName').value.trim().length > 0;
+  const hasPhotos = photos.length > 0;
+  document.getElementById('packBtn').disabled = !(hasName && hasPhotos);
+  if(!zipBlob) document.getElementById('shareRow').style.display = 'none';
+  if(!hasName) setHint('請填入案件名稱');
+  else if(!hasPhotos) setHint('請載入至少一張相片');
+  else setHint('共 ' + photos.length + ' 張相片，左右滑動或點箭頭切換');
+}
+function setHint(msg){ document.getElementById('statusHint').textContent = msg; }
+
+/* ── 重複編號檢查 ── */
+function findDupes(){
+  const nums = photos.map(p => p.num);
+  const seen = new Set(), dupes = new Set();
+  nums.forEach(n => { if(seen.has(n)) dupes.add(n); else seen.add(n); });
+  return [...dupes].sort((a,b) => a - b);
+}
+
+/* ── 打包 ZIP ── */
+async function packPhotos(){
+  const dupes = findDupes();
+  if(dupes.length > 0){ showToast('編號 ' + dupes.join('、') + ' 重複，請修正後再打包', 3500); return; }
+  const btn = document.getElementById('packBtn');
+  btn.disabled = true; btn.textContent = '⏳ 打包中...';
+  try {
+    zipBlob = await buildZip();
+    document.getElementById('shareRow').style.display = 'flex';
+    setHint('✅ 打包完成，請選擇下載或 LINE 分享');
+  } catch(e) {
+    setHint('❌ 打包失敗，請重試');
+  }
+  btn.disabled = false; btn.textContent = '打包 ZIP';
+}
+
+async function buildZip(){
+  const caseName = document.getElementById('caseName').value.trim();
+  const zip = new JSZip();
+  const folder = zip.folder(caseName);
+  const sorted = [...photos].sort((a,b) => a.num - b.num);
+  for(const p of sorted){
+    const canvas = document.querySelector('#cwrap-' + p.id + ' canvas');
+    const dataUrl = canvas ? canvas.toDataURL('image/jpeg', 0.92) : await toDataUrl(p.file);
+    folder.file('界標' + String(p.num).padStart(2,'0') + '.jpg', dataUrl.split(',')[1], { base64: true });
+  }
+  return await zip.generateAsync({ type: 'blob' });
+}
+
+function toDataUrl(file){
+  return new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(file); });
+}
+
+/* ── 下載 ── */
+function doDownload(){
+  if(!zipBlob) return;
+  const name = document.getElementById('caseName').value.trim();
+  const url = URL.createObjectURL(zipBlob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name + '.zip'; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+  setHint('📥 已下載，請用 LINE 傳送檔案');
+}
+
+/* ── LINE 分享（Web Share API） ── */
+async function doShare(){
+  if(!zipBlob) return;
+  const name = document.getElementById('caseName').value.trim();
+  if(navigator.share){
+    const file = new File([zipBlob], name + '.zip', { type: 'application/zip' });
+    if(navigator.canShare && navigator.canShare({ files: [file] })){
+      try { await navigator.share({ files: [file], title: name }); return; } catch(e){}
+    }
+  }
+  doDownload();
+  showToast('此瀏覽器不支援直接分享，已改為下載', 3000);
+}
+</script>
+</body>
+</html>
