@@ -628,8 +628,8 @@ function drawPhoto(canvas, p){
   ctx.drawImage(p.img, 0, 0);
   if(p.stamp){
     const s = p.stamp;
-    const r = Math.max(22, canvas.width * 0.045);
-    const fs = Math.max(15, canvas.width * 0.032);
+    const r = Math.max(22, canvas.width * 0.09);
+    const fs = Math.max(15, canvas.width * 0.064);
     ctx.beginPath();
     ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(226,75,74,0.9)';
