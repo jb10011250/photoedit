@@ -174,6 +174,10 @@ input[type="text"]::placeholder {
   overflow: hidden;
   background: var(--bg-card-alt);
 }
+.photo-img-only {
+  width: 100%;
+  display: block;
+}
 .photo-header {
   display: flex;
   align-items: center;
@@ -195,6 +199,10 @@ input[type="text"]::placeholder {
   font-weight: 600;
   flex-shrink: 0;
   box-shadow: 0 0 8px var(--accent-glow);
+}
+.num-badge.dull {
+  background: #555;
+  box-shadow: none;
 }
 .photo-fname {
   font-size: 12px;
@@ -452,12 +460,31 @@ input[type="text"]::placeholder {
   <div class="step-card">
     <div class="step-label">步驟 1 — 案件名稱</div>
     <input type="text" id="caseName" placeholder="輸入案件名稱" oninput="onCaseChange()"/>
-    <div class="format-hint">格式範例：<span>1150415力行段438,439地號(日期為收件日期)</span></div>
+    <div class="format-hint">格式範例：<span>1150415力行段438,439地號</span></div>
   </div>
 
   <!-- 步驟 2 -->
   <div class="step-card">
-    <div class="step-label">步驟 2 — 載入相片與標記</div>
+    <div class="step-label">步驟 2 — 載入複丈略圖相片(標記需對應)</div>
+    <div class="slider-container" id="mapSliderContainer">
+      <div class="slider-track" id="mapSliderTrack">
+        <div class="empty-card">尚未載入相片</div>
+      </div>
+      <button class="slider-arrow left" id="mapArrowLeft" onclick="mapSlideLeft()" style="display:none">‹</button>
+      <button class="slider-arrow right" id="mapArrowRight" onclick="mapSlideRight()" style="display:none">›</button>
+    </div>
+    <div class="page-indicator" id="mapPageIndicator"></div>
+
+    <button class="add-photo-btn" onclick="document.getElementById('mapFileInput').click()">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      新增複丈略圖
+    </button>
+    <input type="file" id="mapFileInput" accept="image/*" multiple style="display:none" onchange="addMapPhotos(this.files)">
+  </div>
+
+  <!-- 步驟 3 -->
+  <div class="step-card">
+    <div class="step-label">步驟 3 — 載入界標相片與標記</div>
     <div class="slider-container" id="sliderContainer">
       <div class="slider-track" id="sliderTrack">
         <div class="empty-card">尚未載入相片</div>
@@ -474,9 +501,9 @@ input[type="text"]::placeholder {
     <input type="file" id="fileInput" accept="image/*" multiple style="display:none" onchange="addPhotos(this.files)">
   </div>
 
-  <!-- 步驟 3 -->
+  <!-- 步驟 4 -->
   <div class="step-card">
-    <div class="step-label">步驟 3 — 打包與傳送</div>
+    <div class="step-label">步驟 4 — 打包與傳送</div>
     <button class="btn-main primary" id="packBtn" onclick="packPhotos()" disabled>打包 ZIP</button>
     <div class="share-row" id="shareRow" style="display:none">
       <button class="btn-main" onclick="doDownload()">📥 下載到手機</button>
@@ -486,7 +513,7 @@ input[type="text"]::placeholder {
   </div>
 </div>
 
-<!-- 懸浮修改編號彈窗 -->
+<!-- 懸浮修改編號彈窗 (僅限步驟3使用) -->
 <div class="float-modal-overlay" id="modalOverlay" onclick="onOverlayClick(event)">
   <div class="float-modal">
     <h3>修改界標編號</h3>
@@ -503,10 +530,13 @@ input[type="text"]::placeholder {
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
-const photos = [];
+const photos = []; // 存放界標相片
+const mapPhotos = []; // 存放複丈略圖相片
+
 let zipBlob = null;
 let modalTargetId = null;
 let photoIdCounter = 0;
+let mapPhotoIdCounter = 0;
 
 /* ── Toast 提示 ── */
 function showToast(msg, dur){
@@ -516,6 +546,108 @@ function showToast(msg, dur){
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), dur);
 }
+
+/* ==================
+   步驟 2 複丈略圖邏輯
+===================== */
+
+function addMapPhotos(files){
+  Array.from(files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const id = ++mapPhotoIdCounter;
+        mapPhotos.push({ id, file, img });
+        renderMapSlider();
+        updateButtons();
+        zipBlob = null;
+        setTimeout(() => {
+          const track = document.getElementById('mapSliderTrack');
+          const cards = track.querySelectorAll('.photo-card');
+          if(cards.length){
+            cards[cards.length-1].scrollIntoView({ behavior:'smooth', block:'nearest', inline:'start' });
+          }
+          updateMapIndicator();
+        }, 100);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+  document.getElementById('mapFileInput').value = '';
+}
+
+function renderMapSlider(){
+  const track = document.getElementById('mapSliderTrack');
+  track.innerHTML = '';
+  if(mapPhotos.length === 0){
+    track.innerHTML = '<div class="empty-card">尚未載入相片</div>';
+    updateMapIndicator();
+    updateMapArrows();
+    return;
+  }
+  mapPhotos.forEach((p, idx) => {
+    const card = document.createElement('div');
+    card.className = 'photo-card';
+    card.id = 'map-card-' + p.id;
+    card.innerHTML =
+      '<div class="photo-header">' +
+        '<div class="num-badge dull">' + (idx + 1) + '</div>' +
+        '<span class="photo-fname">' + p.file.name + '</span>' +
+      '</div>' +
+      '<img class="photo-img-only" src="' + p.img.src + '">' +
+      '<div class="btn-row">' +
+        '<button class="btn-xs danger" onclick="removeMapPhoto(' + p.id + ')">❌ 移除照片</button>' +
+      '</div>';
+    track.appendChild(card);
+  });
+  updateMapIndicator();
+  updateMapArrows();
+  track.addEventListener('scroll', () => { updateMapIndicator(); updateMapArrows(); }, { passive: true });
+}
+
+function removeMapPhoto(id){
+  const i = mapPhotos.findIndex(x => x.id === id);
+  if(i !== -1) mapPhotos.splice(i, 1);
+  renderMapSlider();
+  updateButtons();
+  zipBlob = null;
+}
+
+function updateMapIndicator(){
+  const track = document.getElementById('mapSliderTrack');
+  const ind = document.getElementById('mapPageIndicator');
+  if(mapPhotos.length === 0){ ind.textContent = ''; return; }
+  const idx = Math.round(track.scrollLeft / track.offsetWidth);
+  ind.textContent = (idx + 1) + ' / ' + mapPhotos.length;
+}
+
+function updateMapArrows(){
+  const left = document.getElementById('mapArrowLeft');
+  const right = document.getElementById('mapArrowRight');
+  if(!left || !right) return;
+  if(mapPhotos.length <= 1){
+    left.style.display = 'none';
+    right.style.display = 'none';
+    return;
+  }
+  left.style.display = 'flex';
+  right.style.display = 'flex';
+}
+function mapSlideLeft(){
+  const track = document.getElementById('mapSliderTrack');
+  track.scrollBy({ left: -track.offsetWidth, behavior: 'smooth' });
+}
+function mapSlideRight(){
+  const track = document.getElementById('mapSliderTrack');
+  track.scrollBy({ left: track.offsetWidth, behavior: 'smooth' });
+}
+
+
+/* ==================
+   步驟 3 界標相片邏輯
+===================== */
 
 /* ── 編號邏輯 ── */
 function getMaxNum(){
@@ -621,15 +753,16 @@ function slideRight(){
   track.scrollBy({ left: track.offsetWidth, behavior: 'smooth' });
 }
 
-/* ── Canvas 繪製 ── */
+/* ── Canvas 繪製 (2x 放大版) ── */
 function drawPhoto(canvas, p){
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(p.img, 0, 0);
   if(p.stamp){
     const s = p.stamp;
-    const r = Math.max(22, canvas.width * 0.09);
-    const fs = Math.max(15, canvas.width * 0.064);
+    // 將常數與比例都乘以二
+    const r = Math.max(44, canvas.width * 0.09);
+    const fs = Math.max(30, canvas.width * 0.064);
     ctx.beginPath();
     ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(226,75,74,0.9)';
@@ -716,16 +849,28 @@ function confirmModal(){
   zipBlob = null;
 }
 
-/* ── 狀態控制 ── */
+
+/* ==================
+   全域狀態與打包邏輯
+===================== */
+
 function onCaseChange(){ updateButtons(); zipBlob = null; }
 function updateButtons(){
   const hasName = document.getElementById('caseName').value.trim().length > 0;
-  const hasPhotos = photos.length > 0;
-  document.getElementById('packBtn').disabled = !(hasName && hasPhotos);
+  const hasAnyPhoto = photos.length > 0 || mapPhotos.length > 0;
+  
+  document.getElementById('packBtn').disabled = !(hasName && hasAnyPhoto);
+  
   if(!zipBlob) document.getElementById('shareRow').style.display = 'none';
+  
   if(!hasName) setHint('請填入案件名稱');
-  else if(!hasPhotos) setHint('請載入至少一張相片');
-  else setHint('共 ' + photos.length + ' 張相片，左右滑動或點箭頭切換');
+  else if(!hasAnyPhoto) setHint('請載入界標相片或複丈略圖');
+  else {
+    let t = [];
+    if(mapPhotos.length > 0) t.push(mapPhotos.length + ' 張略圖');
+    if(photos.length > 0) t.push(photos.length + ' 張界標');
+    setHint('共 ' + t.join('、') + '，可以測試左右滑軌與打包');
+  }
 }
 function setHint(msg){ document.getElementById('statusHint').textContent = msg; }
 
@@ -741,13 +886,16 @@ function findDupes(){
 async function packPhotos(){
   const dupes = findDupes();
   if(dupes.length > 0){ showToast('編號 ' + dupes.join('、') + ' 重複，請修正後再打包', 3500); return; }
+  
   const btn = document.getElementById('packBtn');
   btn.disabled = true; btn.textContent = '⏳ 打包中...';
+  
   try {
     zipBlob = await buildZip();
     document.getElementById('shareRow').style.display = 'flex';
     setHint('✅ 打包完成，請選擇下載或 LINE 分享');
   } catch(e) {
+    console.error(e);
     setHint('❌ 打包失敗，請重試');
   }
   btn.disabled = false; btn.textContent = '打包 ZIP';
@@ -757,11 +905,20 @@ async function buildZip(){
   const caseName = document.getElementById('caseName').value.trim();
   const zip = new JSZip();
   const folder = zip.folder(caseName);
+  
+  // 打包複丈略圖相片 (使用流水號 複丈略圖01.jpg, 複丈略圖02.jpg)
+  for(let i=0; i<mapPhotos.length; i++){
+    const p = mapPhotos[i];
+    const dataUrl = await toDataUrl(p.file);
+    folder.file('複丈略圖' + String(i+1).padStart(2,'0') + '.jpg', dataUrl.split(',')[1], { base64: true });
+  }
+
+  // 打包界標相片與標記
   const sorted = [...photos].sort((a,b) => a.num - b.num);
   for(const p of sorted){
     const canvas = document.querySelector('#cwrap-' + p.id + ' canvas');
     const dataUrl = canvas ? canvas.toDataURL('image/jpeg', 0.92) : await toDataUrl(p.file);
-    folder.file('界標' + String(p.num).padStart(2,'0') + '.jpg', dataUrl.split(',')[1], { base64: true });
+    folder.file('界標' + String(p.num).padStart(2,'0') + '.jpg', dataUrl.split(',')[1], { base64: true }); // 使用使用者自訂編號
   }
   return await zip.generateAsync({ type: 'blob' });
 }
