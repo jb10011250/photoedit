@@ -484,7 +484,7 @@ input[type="text"]::placeholder {
 
   <!-- 步驟 3 -->
   <div class="step-card">
-    <div class="step-label">步驟 3 — 載入界標相片與標記</div>
+    <div class="step-label">步驟 3 — 載入界標相片及編修標記(可批次載入)</div>
     <div class="slider-container" id="sliderContainer">
       <div class="slider-track" id="sliderTrack">
         <div class="empty-card">尚未載入相片</div>
@@ -510,6 +510,13 @@ input[type="text"]::placeholder {
       <button class="btn-main" onclick="doShare()">💬 LINE 分享</button>
     </div>
     <p class="status-hint" id="statusHint">請先填入案件名稱並載入相片</p>
+  </div>
+
+  <!-- 步驟 5 -->
+  <div class="step-card">
+    <div class="step-label">步驟 5 — 清除重置</div>
+    <button class="btn-main" onclick="resetApp()" style="margin-bottom:0; color:var(--accent); border-color:rgba(226,75,74,0.3);">🗑️ 清除所有資料（下一案）</button>
+    <p class="status-hint" style="margin-top:8px;">清除目前所有輸入與照片，以開始處理下一件案件</p>
   </div>
 </div>
 
@@ -950,6 +957,29 @@ async function doShare(){
   }
   doDownload();
   showToast('此瀏覽器不支援直接分享，已改為下載', 3000);
+}
+
+/* ── 重置應用程式 ── */
+function resetApp(){
+  if(!confirm('確定要清除目前所有資料（包含照片與案件名稱）嗎？')) return;
+  
+  // 清空資料
+  photos.length = 0;
+  mapPhotos.length = 0;
+  zipBlob = null;
+  photoIdCounter = 0;
+  mapPhotoIdCounter = 0;
+  
+  // 清空輸入框
+  document.getElementById('caseName').value = '';
+  
+  // 重新渲染介面
+  renderSlider();
+  renderMapSlider();
+  updateButtons();
+  
+  showToast('已完成重置，可以開始下一案');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 </script>
 </body>
