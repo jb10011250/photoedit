@@ -215,7 +215,7 @@ input[type="text"]::placeholder {
 .img-wrap {
   cursor: crosshair;
   position: relative;
-  display: flex;
+  display: block;
   overflow: hidden;
 }
 .img-wrap img {
@@ -223,6 +223,7 @@ input[type="text"]::placeholder {
   width: 100%;
   height: auto;
   pointer-events: auto;
+  object-fit: contain;
 }
 .stamp-overlay {
   position: absolute;
@@ -636,7 +637,6 @@ function renderMapSlider(){
   });
   updateMapIndicator();
   updateMapArrows();
-  track.addEventListener('scroll', () => { updateMapIndicator(); updateMapArrows(); }, { passive: true });
 }
 
 function removeMapPhoto(id){
@@ -758,7 +758,6 @@ function renderSlider(){
   });
   updateIndicator();
   updateArrows();
-  track.addEventListener('scroll', () => { updateIndicator(); updateArrows(); }, { passive: true });
 }
 
 /* ── 頁碼指示 ── */
@@ -1050,6 +1049,13 @@ function resetApp(){
   showToast('已完成重置，可以開始下一案');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+/* ── 初始化時只綁定一次 scroll 事件 ── */
+(function initScrollListeners(){
+  document.getElementById('sliderTrack').addEventListener('scroll',
+    () => { updateIndicator(); updateArrows(); }, { passive: true });
+  document.getElementById('mapSliderTrack').addEventListener('scroll',
+    () => { updateMapIndicator(); updateMapArrows(); }, { passive: true });
+})();
 </script>
 </body>
 </html>
