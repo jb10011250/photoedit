@@ -212,14 +212,31 @@ input[type="text"]::placeholder {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.canvas-wrap {
+.img-wrap {
   cursor: crosshair;
   position: relative;
+  display: flex;
+  overflow: hidden;
 }
-.canvas-wrap canvas {
+.img-wrap img {
   display: block;
   width: 100%;
   height: auto;
+  pointer-events: auto;
+}
+.stamp-overlay {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(226,75,74,0.9);
+  border: 2px solid #fff;
+  color: #fff;
+  font-weight: bold;
+  pointer-events: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
 .stamp-hint {
   font-size: 11px;
@@ -559,28 +576,36 @@ function showToast(msg, dur){
 ===================== */
 
 function addMapPhotos(files){
-  Array.from(files).forEach(file => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      const img = new Image();
-      img.onload = () => {
-        const id = ++mapPhotoIdCounter;
-        mapPhotos.push({ id, file, img });
-        renderMapSlider();
-        updateButtons();
-        zipBlob = null;
-        setTimeout(() => {
-          const track = document.getElementById('mapSliderTrack');
-          const cards = track.querySelectorAll('.photo-card');
-          if(cards.length){
-            cards[cards.length-1].scrollIntoView({ behavior:'smooth', block:'nearest', inline:'start' });
-          }
-          updateMapIndicator();
-        }, 100);
+  if(files.length === 0) return;
+  const fileArr = Array.from(files);
+  const promises = fileArr.map(file => {
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => resolve({ file, img });
+        img.src = e.target.result;
       };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+      reader.readAsDataURL(file);
+    });
+  });
+
+  Promise.all(promises).then(results => {
+    results.forEach(({file, img}) => {
+      const id = ++mapPhotoIdCounter;
+      mapPhotos.push({ id, file, img });
+    });
+    renderMapSlider();
+    updateButtons();
+    zipBlob = null;
+    setTimeout(() => {
+      const track = document.getElementById('mapSliderTrack');
+      const cards = track.querySelectorAll('.photo-card');
+      if(cards.length){
+        cards[cards.length-1].scrollIntoView({ behavior:'smooth', block:'nearest', inline:'start' });
+      }
+      updateMapIndicator();
+    }, 100);
   });
   document.getElementById('mapFileInput').value = '';
 }
@@ -663,29 +688,37 @@ function getMaxNum(){
 
 /* ── 載入照片 ── */
 function addPhotos(files){
-  Array.from(files).forEach(file => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      const img = new Image();
-      img.onload = () => {
-        const id = ++photoIdCounter;
-        const num = getMaxNum() + 1;
-        photos.push({ id, file, img, num, stamp: null });
-        renderSlider();
-        updateButtons();
-        zipBlob = null;
-        setTimeout(() => {
-          const track = document.getElementById('sliderTrack');
-          const cards = track.querySelectorAll('.photo-card');
-          if(cards.length){
-            cards[cards.length-1].scrollIntoView({ behavior:'smooth', block:'nearest', inline:'start' });
-          }
-          updateIndicator();
-        }, 100);
+  if(files.length === 0) return;
+  const fileArr = Array.from(files);
+  const promises = fileArr.map(file => {
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => resolve({ file, img });
+        img.src = e.target.result;
       };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+      reader.readAsDataURL(file);
+    });
+  });
+
+  Promise.all(promises).then(results => {
+    results.forEach(({file, img}) => {
+      const id = ++photoIdCounter;
+      const num = getMaxNum() + 1;
+      photos.push({ id, file, img, num, stamp: null });
+    });
+    renderSlider();
+    updateButtons();
+    zipBlob = null;
+    setTimeout(() => {
+      const track = document.getElementById('sliderTrack');
+      const cards = track.querySelectorAll('.photo-card');
+      if(cards.length){
+        cards[cards.length-1].scrollIntoView({ behavior:'smooth', block:'nearest', inline:'start' });
+      }
+      updateIndicator();
+    }, 100);
   });
   document.getElementById('fileInput').value = '';
 }
@@ -709,7 +742,9 @@ function renderSlider(){
         '<div class="num-badge" id="badge-' + p.id + '">' + p.num + '</div>' +
         '<span class="photo-fname">' + p.file.name + '</span>' +
       '</div>' +
-      '<div class="canvas-wrap" id="cwrap-' + p.id + '"></div>' +
+      '<div class="img-wrap" id="wrap-' + p.id + '">' +
+        '<img src="' + p.img.src + '">' +
+      '</div>' +
       '<div class="stamp-hint" id="hint-' + p.id + '">' + (p.stamp ? '已標記 — 點【清除編號】重新標記' : '👆 點擊相片標記界標位置') + '</div>' +
       '<div class="btn-row">' +
         '<button class="btn-xs" onclick="openModal(' + p.id + ')">✏️ 修改編號</button>' +
@@ -717,13 +752,9 @@ function renderSlider(){
         '<button class="btn-xs danger" onclick="removePhoto(' + p.id + ')">❌ 移除照片</button>' +
       '</div>';
     track.appendChild(card);
-    const cwrap = card.querySelector('.canvas-wrap');
-    const canvas = document.createElement('canvas');
-    canvas.width = p.img.naturalWidth;
-    canvas.height = p.img.naturalHeight;
-    drawPhoto(canvas, p);
-    cwrap.appendChild(canvas);
-    canvas.addEventListener('click', e => onCanvasClick(e, canvas, p));
+    const wrap = card.querySelector('#wrap-' + p.id);
+    wrap.addEventListener('click', e => onImageClick(e, wrap, p));
+    drawStampOverlay(wrap, p);
   });
   updateIndicator();
   updateArrows();
@@ -760,40 +791,41 @@ function slideRight(){
   track.scrollBy({ left: track.offsetWidth, behavior: 'smooth' });
 }
 
-/* ── Canvas 繪製 (2x 放大版) ── */
-function drawPhoto(canvas, p){
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(p.img, 0, 0);
-  if(p.stamp){
-    const s = p.stamp;
-    // 將常數與比例都乘以二
-    const r = Math.max(44, canvas.width * 0.09);
-    const fs = Math.max(30, canvas.width * 0.064);
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(226,75,74,0.9)';
-    ctx.fill();
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = Math.max(2, canvas.width * 0.004);
-    ctx.stroke();
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold ' + fs + 'px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(p.num, s.x, s.y);
+/* ── CSS 印章疊加 ── */
+function drawStampOverlay(wrap, p){
+  let stampDiv = wrap.querySelector('.stamp-overlay');
+  if(!p.stamp){
+    if(stampDiv) stampDiv.remove();
+    return;
   }
+  if(!stampDiv){
+    stampDiv = document.createElement('div');
+    stampDiv.className = 'stamp-overlay';
+    wrap.appendChild(stampDiv);
+  }
+  stampDiv.style.left = (p.stamp.pctX * 100) + '%';
+  stampDiv.style.top = (p.stamp.pctY * 100) + '%';
+  // 手機預覽固定合適大小即可
+  stampDiv.style.width = '48px';
+  stampDiv.style.height = '48px';
+  stampDiv.style.fontSize = '22px';
+  stampDiv.textContent = p.num;
 }
 
 /* ── 點擊標記 ── */
-function onCanvasClick(e, canvas, p){
+function onImageClick(e, wrap, p){
   if(p.stamp){ showToast('每張相片只能蓋一個編號，請先點【清除編號】再重新標記'); return; }
-  const rect = canvas.getBoundingClientRect();
+  const img = wrap.querySelector('img');
+  const rect = img.getBoundingClientRect();
+  
+  // 如果點擊超出圖片範圍則忽略
+  if(e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) return;
+
   p.stamp = {
-    x: (e.clientX - rect.left) * (canvas.width / rect.width),
-    y: (e.clientY - rect.top) * (canvas.height / rect.height)
+    pctX: (e.clientX - rect.left) / rect.width,
+    pctY: (e.clientY - rect.top) / rect.height
   };
-  drawPhoto(canvas, p);
+  drawStampOverlay(wrap, p);
   const hint = document.getElementById('hint-' + p.id);
   if(hint) hint.textContent = '已標記 — 點【清除編號】重新標記';
   zipBlob = null;
@@ -804,8 +836,8 @@ function clearStamp(id){
   const p = photos.find(x => x.id === id);
   if(!p) return;
   p.stamp = null;
-  const canvas = document.querySelector('#cwrap-' + id + ' canvas');
-  if(canvas) drawPhoto(canvas, p);
+  const wrap = document.getElementById('wrap-' + id);
+  if(wrap) drawStampOverlay(wrap, p);
   const hint = document.getElementById('hint-' + id);
   if(hint) hint.textContent = '👆 點擊相片標記界標位置';
   zipBlob = null;
@@ -845,8 +877,8 @@ function confirmModal(){
   const p = photos.find(x => x.id === modalTargetId);
   if(!p) return;
   p.num = val;
-  const canvas = document.querySelector('#cwrap-' + p.id + ' canvas');
-  if(canvas) drawPhoto(canvas, p);
+  const wrap = document.getElementById('wrap-' + p.id);
+  if(wrap) drawStampOverlay(wrap, p);
   const badge = document.getElementById('badge-' + p.id);
   if(badge) badge.textContent = val;
   const hint = document.getElementById('hint-' + p.id);
@@ -913,19 +945,56 @@ async function buildZip(){
   const zip = new JSZip();
   const folder = zip.folder(caseName);
   
-  // 打包複丈略圖相片 (使用流水號 複丈略圖01.jpg, 複丈略圖02.jpg)
+  // 打包複丈略圖相片 (依照原始圖片副檔名)
   for(let i=0; i<mapPhotos.length; i++){
     const p = mapPhotos[i];
+    const ext = p.file.type === 'image/png' ? '.png' : '.jpg';
     const dataUrl = await toDataUrl(p.file);
-    folder.file('複丈略圖' + String(i+1).padStart(2,'0') + '.jpg', dataUrl.split(',')[1], { base64: true });
+    folder.file('複丈略圖' + String(i+1).padStart(2,'0') + ext, dataUrl.split(',')[1], { base64: true });
   }
 
   // 打包界標相片與標記
   const sorted = [...photos].sort((a,b) => a.num - b.num);
   for(const p of sorted){
-    const canvas = document.querySelector('#cwrap-' + p.id + ' canvas');
-    const dataUrl = canvas ? canvas.toDataURL('image/jpeg', 0.92) : await toDataUrl(p.file);
-    folder.file('界標' + String(p.num).padStart(2,'0') + '.jpg', dataUrl.split(',')[1], { base64: true }); // 使用使用者自訂編號
+    const type = p.file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+    const ext = type === 'image/png' ? '.png' : '.jpg';
+
+    if(p.stamp){
+      // 背景動態產生 Canvas 合成印章
+      const canvas = document.createElement('canvas');
+      canvas.width = p.img.naturalWidth;
+      canvas.height = p.img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(p.img, 0, 0);
+      
+      const r = Math.max(44, canvas.width * 0.09);
+      const fs = Math.max(30, canvas.width * 0.064);
+      const cx = p.stamp.pctX * canvas.width;
+      const cy = p.stamp.pctY * canvas.height;
+      
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(226,75,74,0.9)';
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = Math.max(2, canvas.width * 0.004);
+      ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold ' + fs + 'px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(p.num, cx, cy);
+      
+      const dataUrl = canvas.toDataURL(type, 0.92);
+      folder.file('界標' + String(p.num).padStart(2,'0') + ext, dataUrl.split(',')[1], { base64: true });
+      
+      // 立即釋放 Canvas 記憶體
+      canvas.width = 0;
+      canvas.height = 0;
+    } else {
+      const dataUrl = await toDataUrl(p.file);
+      folder.file('界標' + String(p.num).padStart(2,'0') + ext, dataUrl.split(',')[1], { base64: true });
+    }
   }
   return await zip.generateAsync({ type: 'blob' });
 }
